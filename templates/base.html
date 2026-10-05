@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}レッスン管理{% endblock %}</title>
+  <!-- 保護者はスマホで見ることが多いため、スマホ対応済みのCSSを使って最低限の見た目を整える -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><strong>レッスン管理</strong></li></ul>
+      {% if user.is_authenticated %}
+      <ul>
+        <li>{{ user.email }}</li>
+        <li>
+          <!-- リンクで誰かにログアウトさせられるのを防ぐため、Djangoではログアウトはフォーム送信で行う -->
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="secondary">ログアウト</button>
+          </form>
+        </li>
+      </ul>
+      {% endif %}
+    </nav>
+  </header>
+  <main class="container">
+    {% for message in messages %}
+      <article>{{ message }}</article>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

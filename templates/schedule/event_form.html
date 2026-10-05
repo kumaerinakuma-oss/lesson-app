@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}予定{% endblock %}
+
+{% block content %}
+<article>
+  <h2>{% if e %}予定の編集{% else %}予定の追加{% endif %}</h2>
+  {% if e.series %}
+    <p><small>🔁 繰り返しの予定です。下の「変更する範囲」で、この回だけ変えるか、以降の回もまとめて変えるかを選べます。</small></p>
+  {% endif %}
+  <form method="post" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">保存</button>
+  </form>
+  <p><a href="{% url 'calendar' school.id %}">カレンダーに戻る</a></p>
+</article>
+
+{% if form.repeat %}
+<script>
+  // 繰り返さない予定では終了日が不要なので、選んだときだけ入力欄を出して迷わせない
+  (function () {
+    var repeat = document.getElementById("{{ form.repeat.id_for_label }}");
+    var untilRow = document.getElementById("{{ form.repeat_until.id_for_label }}").closest("p");
+    function toggle() { untilRow.hidden = !repeat.value; }
+    repeat.addEventListener("change", toggle);
+    toggle();
+  })();
+</script>
+{% endif %}
+{% endblock %}

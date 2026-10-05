@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}グループの管理｜{{ school.name }}{% endblock %}
+
+{% block content %}
+<h2>グループの管理</h2>
+<p><small>クラスや曜日ごとに生徒をまとめられます（例：火曜クラス、初級）。生徒をどのグループに入れるかは、会員の個人画面で設定します。</small></p>
+
+<article>
+  <h3>{% if editing %}「{{ editing.name }}」の名前を変更{% else %}グループを追加{% endif %}</h3>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">{% if editing %}変更する{% else %}追加する{% endif %}</button>
+  </form>
+  {% if editing %}<p><a href="{% url 'group_list' school.id %}">キャンセル</a></p>{% endif %}
+</article>
+
+{% for g in groups %}
+  <article>
+    <strong>{{ g.name }}</strong>　<small>在籍 {{ g.student_count }}人</small>
+    <div class="grid" style="margin-top:.75rem">
+      <a href="{% url 'member_list' school.id %}?group={{ g.id }}" role="button" class="secondary">会員を見る</a>
+      <a href="{% url 'group_edit' school.id g.id %}" role="button" class="secondary outline">名前を変更</a>
+      <form method="post" action="{% url 'group_delete' school.id g.id %}"
+            onsubmit="return confirm('「{{ g.name|escapejs }}」を削除しますか？所属していた生徒は未所属になります。');">
+        {% csrf_token %}
+        <button type="submit" class="secondary outline">削除</button>
+      </form>
+    </div>
+  </article>
+{% empty %}
+  <p>グループはまだありません。</p>
+{% endfor %}
+
+<p><a href="{% url 'member_list' school.id %}">会員一覧に戻る</a></p>
+{% endblock %}

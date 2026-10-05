@@ -1,0 +1,9 @@
+# 仮想環境はPCごとに作り直すもので、容量も大きいため共有しない
+.venv/
+__pycache__/
+*.pyc
+
+# 秘密鍵・個人情報を含むため、GitHubに公開しない
+.env
+db.sqlite3
+media/

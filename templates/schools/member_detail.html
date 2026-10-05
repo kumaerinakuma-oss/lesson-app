@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ s.name }}｜会員管理{% endblock %}
+
+{% block content %}
+<article>
+  <header>
+    <h2>{{ s.name }}</h2>
+    {% if s.status == "active" %}<small>在籍</small>{% else %}<mark>{{ s.get_status_display }}</mark>{% endif %}
+  </header>
+  <table>
+    <tbody>
+      <tr><th>生年月日</th><td>{% if s.birth_date %}{{ s.birth_date|date:"Y年n月j日" }}{% else %}未登録{% endif %}</td></tr>
+      <tr><th>学年</th><td>{{ s.grade|default:"—" }}</td></tr>
+      <tr><th>登録メールアドレス</th><td>{{ s.guardian.email }}</td></tr>
+      <tr><th>グループ</th><td>{{ s.group.name|default:"未所属" }}</td></tr>
+      <tr><th>月謝金額</th><td>{% if s.monthly_fee %}{{ s.monthly_fee|intcomma }}円{% else %}未設定{% endif %}</td></tr>
+      {% if siblings %}
+        <tr><th>兄弟姉妹</th><td>
+          {% for b in siblings %}<a href="{% url 'member_detail' school.id b.id %}">{{ b.name }}</a>{% if not forloop.last %}、{% endif %}{% endfor %}
+        </td></tr>
+      {% endif %}
+      <tr><th>未払いの請求</th><td>{% if unpaid_count %}{{ unpaid_count }}件（{{ unpaid_total|intcomma }}円）{% else %}なし{% endif %}</td></tr>
+    </tbody>
+  </table>
+</article>
+
+<article>
+  <h3>会員情報の編集</h3>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">保存</button>
+  </form>
+</article>
+
+<article>
+  {% if s.status == "active" %}
+    <h3>退会</h3>
+    <p><small>退会にしても、月謝や出欠連絡の記録は残ります。在籍中のお子さまがいなくなった保護者は、お知らせなどを見られなくなります。
+    {% if unpaid_count %}<br><strong>未払いの請求が {{ unpaid_count }}件 残っています。</strong>{% endif %}</small></p>
+    <!-- 押し間違いで保護者が教室の情報を見られなくなるため、確認を挟む -->
+    <form method="post" action="{% url 'member_status' school.id s.id 'withdraw' %}"
+          onsubmit="return confirm('{{ s.name|escapejs }}さんを退会にしますか？');">
+      {% csrf_token %}
+      <button type="submit" class="secondary outline">退会させる</button>
+    </form>
+  {% elif s.status == "withdrawn" %}
+    <h3>在籍に戻す</h3>
+    <form method="post" action="{% url 'member_status' school.id s.id 'restore' %}">
+      {% csrf_token %}
+      <button type="submit" class="secondary outline">在籍に戻す</button>
+    </form>
+  {% else %}
+    <p><small>承認待ちの会員です。<a href="{% url 'approvals' school.id %}">承認画面</a>で承認または却下してください。</small></p>
+  {% endif %}
+</article>
+
+<p><a href="{% url 'member_list' school.id %}">会員一覧に戻る</a></p>
+{% endblock %}

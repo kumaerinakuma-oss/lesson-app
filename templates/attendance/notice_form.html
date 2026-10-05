@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}出欠を連絡する{% endblock %}
+
+{% block content %}
+<article>
+  <h2>出欠を連絡する</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.student.errors }}<label>{{ form.student.label }}{{ form.student }}</label>
+    {{ form.target_date.errors }}<label>{{ form.target_date.label }}{{ form.target_date }}</label>
+    {{ form.type.errors }}<label>{{ form.type.label }}{{ form.type }}</label>
+    {% include "attendance/_template_buttons.html" with target_id=form.body.id_for_label %}
+    {{ form.body.errors }}<label>{{ form.body.label }}{{ form.body }}</label>
+    <button type="submit">送信する</button>
+  </form>
+  <p><a href="{% url 'notice_list' school.id %}">一覧に戻る</a></p>
+</article>
+{% endblock %}

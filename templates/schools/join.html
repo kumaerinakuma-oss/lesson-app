@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}{{ school.name }}への参加申請{% endblock %}
+
+{% block content %}
+<article>
+  <h2>{{ school.name }}への参加申請</h2>
+  <!-- ボタンの連打で同じ申請が二重に送られるのを防ぐため、送信したらボタンを押せなくする -->
+  <form method="post" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+    {% csrf_token %}
+    {% if user_form %}
+      <h3>保護者アカウント</h3>
+      {{ user_form.as_p }}
+      <p><small>すでにアカウントをお持ちの方は、<a href="{% url 'login' %}?next={{ request.path|urlencode }}">ログイン</a>してからこのページを開いてください。</small></p>
+    {% endif %}
+    <h3>お子さま</h3>
+    {{ child_form.as_p }}
+    <button type="submit">申請する</button>
+  </form>
+</article>
+{% endblock %}

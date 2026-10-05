@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}カレンダー｜{{ school.name }}{% endblock %}
+
+{% block content %}
+<style>
+  /* 7列を画面幅に均等に収め、スマホでも横スクロールが出ないようにする */
+  .cal { table-layout: fixed; width: 100%; }
+  .cal th, .cal td { padding: .25rem; vertical-align: top; font-size: .8rem; overflow: hidden; }
+  .cal td { height: 5.5rem; border: 1px solid var(--pico-muted-border-color); }
+  .cal .out { opacity: .35; }
+  .cal .today { outline: 2px solid var(--pico-primary); outline-offset: -2px; }
+  /* 日付のリンクは文字色を継承する指定のほうが優先されるため、リンクにも色を明示する */
+  .cal .sun, .cal a.day.sun { color: #d9534f; }
+  .cal .sat, .cal a.day.sat { color: #3b82f6; }
+  /* スマホの升目は時刻だけで埋まって予定名が読めなくなるため、狭い画面では時刻を省く（下の一覧には出る） */
+  @media (max-width: 600px) { .cal .tm { display: none; } }
+  .actions { margin-top: .75rem; }
+  .actions > * { margin-bottom: 0; }
+  .cal .ev, .cal .nt { display: block; border-radius: .25rem; padding: 0 .2rem; margin-top: .15rem;
+                       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal .ev { background: var(--pico-primary-background); color: var(--pico-primary-inverse); }
+  .cal .nt { background: var(--pico-mark-background-color); color: var(--pico-mark-color); }
+  .cal a.day { text-decoration: none; color: inherit; display: block; }
+</style>
+
+<h2>{{ school.name }}のカレンダー</h2>
+
+<nav>
+  <ul><li><a href="{{ prev_url }}">← 前の月</a></li></ul>
+  <ul><li><strong>{{ first|date:"Y年n月" }}</strong>　<a href="{{ this_url }}"><small>今月</small></a></li></ul>
+  <ul><li><a href="{{ next_url }}">次の月 →</a></li></ul>
+</nav>
+
+<table class="cal">
+  <thead>
+    <tr><th class="sun">日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th class="sat">土</th></tr>
+  </thead>
+  <tbody>
+    {% for week in grid %}
+      <tr>
+        {% for day in week %}
+          <td class="{% if not day.in_month %}out{% endif %} {% if day.is_today %}today{% endif %}">
+            {% if is_staff %}
+              <!-- 運営者は日付を押すだけでその日の予定を追加できるようにする -->
+              <a class="day {% if forloop.first %}sun{% elif forloop.last %}sat{% endif %}"
+                 href="{% url 'event_create' school.id %}?date={{ day.date|date:'Y-m-d' }}" title="この日に予定を追加">{{ day.date.day }}</a>
+            {% else %}
+              <span class="{% if forloop.first %}sun{% elif forloop.last %}sat{% endif %}">{{ day.date.day }}</span>
+            {% endif %}
+            {% for e in day.events %}
+              <span class="ev" title="{{ e.title }}">{% if e.start_time %}<span class="tm">{{ e.start_time|time:"G:i" }} </span>{% endif %}{{ e.title }}</span>
+            {% endfor %}
+            {% for n in day.notices %}
+              <a class="nt" href="{% url 'notice_detail' school.id n.id %}" title="{{ n.student.name }} {{ n.get_type_display }}">{{ n.student.name }} {{ n.get_type_display }}</a>
+            {% endfor %}
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p><small><span class="cal"><span class="ev" style="display:inline">予定</span>　<span class="nt" style="display:inline">出欠連絡</span></span>
+{% if is_staff %}　日付を押すと予定を追加できます。{% endif %}</small></p>
+
+{% if is_staff %}
+  <p><a href="{% url 'event_create' school.id %}" role="button">予定を追加</a></p>
+{% endif %}
+
+<h3>{{ first|date:"n月" }}の予定</h3>
+{% for e in month_events %}
+  <article>
+    <strong>{{ e.date|date:"n/j（D）" }}
+      {% if e.start_time %}{{ e.start_time|time:"G:i" }}{% if e.end_time %}〜{{ e.end_time|time:"G:i" }}{% endif %}{% endif %}
+      　{{ e.title }}</strong>{% if e.series %} <small title="繰り返しの予定">🔁</small>{% endif %}
+    {% if e.location %}<br><small>場所：{{ e.location }}</small>{% endif %}
+    {% if e.note %}<p>{{ e.note|linebreaksbr }}</p>{% endif %}
+    {% if is_staff %}
+      <div class="grid actions">
+        <a href="{% url 'event_edit' school.id e.id %}" role="button" class="secondary">編集</a>
+        <form method="post" action="{% url 'event_delete' school.id e.id %}"
+              onsubmit="return confirm('「{{ e.title|escapejs }}」（{{ e.date|date:'n/j' }}）を削除しますか？');">
+          {% csrf_token %}
+          <button type="submit" class="secondary outline">{% if e.series %}この回だけ削除{% else %}削除{% endif %}</button>
+        </form>
+        {% if e.series %}
+          <form method="post" action="{% url 'event_delete' school.id e.id %}"
+                onsubmit="return confirm('「{{ e.title|escapejs }}」の {{ e.date|date:'n/j' }} 以降の繰り返しを、すべて削除しますか？');">
+            {% csrf_token %}
+            <!-- 同じ削除処理に「どこまで消すか」だけを伝える -->
+            <input type="hidden" name="scope" value="following">
+            <button type="submit" class="secondary outline">これ以降も削除</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endif %}
+  </article>
+{% empty %}
+  <p>この月の予定はありません。</p>
+{% endfor %}
+
+<p><a href="{% url 'home' %}">トップに戻る</a></p>
+{% endblock %}

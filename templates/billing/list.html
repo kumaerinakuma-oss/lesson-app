@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}月謝｜{{ school.name }}{% endblock %}
+
+{% block content %}
+<h2>{{ school.name }}の月謝</h2>
+
+{% if is_staff %}
+  <p><a href="{% url 'invoice_bulk_create' school.id %}" role="button">請求をまとめて作成</a></p>
+  <form method="get">
+    <fieldset role="group">
+      <input type="month" name="month" value="{{ month }}" aria-label="対象月">
+      <button type="submit" class="secondary">絞り込む</button>
+    </fieldset>
+  </form>
+  <article>
+    入金済み：<strong>{{ summary.paid|intcomma }}円</strong>　／　未払い：<strong>{{ summary.unpaid|intcomma }}円</strong>
+  </article>
+{% endif %}
+
+{% for i in invoices %}
+  <article>
+    <strong>{{ i.billing_month }}　{{ i.title }}　{{ i.amount|intcomma }}円</strong>
+    {% if i.status == "unpaid" %}<mark>未払い</mark>
+    {% elif i.status == "paid" %}<small>支払い済み（{{ i.get_method_display }}・{{ i.paid_at|date:"n/j" }}）</small>
+    {% else %}<small><s>取り消し</s></small>{% endif %}
+    <br><small>{{ i.student.name }}</small>
+
+    {% if i.status == "unpaid" %}
+      {% if is_staff %}
+        <div class="grid">
+          <form method="post" action="{% url 'invoice_cash' school.id i.id %}"
+                onsubmit="return confirm('{{ i.student.name|escapejs }}さんの{{ i.amount }}円を、現金で受け取り済みにしますか？');">
+            {% csrf_token %}
+            <input type="hidden" name="month" value="{{ month }}">
+            <button type="submit" class="outline">現金で受領</button>
+          </form>
+          <form method="post" action="{% url 'invoice_cancel' school.id i.id %}"
+                onsubmit="return confirm('この請求を取り消しますか？');">
+            {% csrf_token %}
+            <input type="hidden" name="month" value="{{ month }}">
+            <button type="submit" class="outline secondary">取り消し</button>
+          </form>
+        </div>
+      {% else %}
+        <!-- 支払い画面への移動は決済の作成をともなうため、リンクではなくフォーム送信（POST）で行う -->
+        <form method="post" action="{% url 'invoice_pay' school.id i.id %}"
+              onsubmit="this.querySelector('button').disabled = true;">
+          {% csrf_token %}
+          <button type="submit">カードで支払う</button>
+        </form>
+      {% endif %}
+    {% endif %}
+  </article>
+{% empty %}
+  <p>請求はありません。</p>
+{% endfor %}
+
+<p><a href="{% url 'home' %}">トップに戻る</a></p>
+{% endblock %}

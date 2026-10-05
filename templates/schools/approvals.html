@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}承認待ち｜{{ school.name }}{% endblock %}
+
+{% block content %}
+<h2>{{ school.name }}の承認待ち</h2>
+
+{% for s in pending %}
+  <article>
+    <strong>{{ s.name }}</strong>{% if s.grade %}　{{ s.grade }}{% endif %}<br>
+    <small>保護者：{{ s.guardian.email }}</small>
+    <div class="grid">
+      <!-- 誰かが用意したリンクを踏んだだけで承認・却下されないよう、フォーム送信（POST）で行う -->
+      <form method="post" action="{% url 'decide' school.id s.id 'approve' %}">
+        {% csrf_token %}
+        <button type="submit">承認</button>
+      </form>
+      <form method="post" action="{% url 'decide' school.id s.id 'reject' %}"
+            onsubmit="return confirm('{{ s.name|escapejs }}さんの申請を却下しますか？');">
+        {% csrf_token %}
+        <button type="submit" class="secondary">却下</button>
+      </form>
+    </div>
+  </article>
+{% empty %}
+  <p>承認待ちの申請はありません。</p>
+{% endfor %}
+
+<p><a href="{% url 'home' %}">トップに戻る</a></p>
+{% endblock %}

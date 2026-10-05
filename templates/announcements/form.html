@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{% if a %}お知らせの編集{% else %}新しいお知らせ{% endif %}{% endblock %}
+
+{% block content %}
+<article>
+  <h2>{% if a %}お知らせの編集{% else %}新しいお知らせ{% endif %}</h2>
+
+  {% if a.status == "published" %}
+    <!-- 公開済みの内容を書き換えると保護者側で「更新あり」になるため、運営者に事前に伝える -->
+    <p><small>公開済みのお知らせです。内容を変更すると、保護者には「更新あり」と表示され、変更前の内容は編集履歴に残ります。</small></p>
+  {% endif %}
+
+  <!-- ファイルを送信するには multipart 形式が必要なため -->
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.title.errors }}<label>{{ form.title.label }}{{ form.title }}</label>
+    {{ form.body.errors }}<label>{{ form.body.label }}{{ form.body }}</label>
+
+    <fieldset>
+      <legend>{{ form.audience.label }}</legend>
+      {{ form.audience.errors }}
+      {% for radio in form.audience %}<label>{{ radio.tag }} {{ radio.choice_label }}</label>{% endfor %}
+    </fieldset>
+
+    <!-- 選んだ宛先の種類に合う選択肢だけを見せる。3種類を同時に出すと、どれが有効なのか分からなくなるため -->
+    <fieldset data-audience="grade">
+      <legend>{{ form.target_grades.label }}</legend>
+      {{ form.target_grades.errors }}
+      {% for box in form.target_grades %}<label>{{ box.tag }} {{ box.choice_label }}</label>
+      {% empty %}<small>生年月日が登録されている在籍中の会員がいません。</small>{% endfor %}
+      <small>生年月日が未登録の会員には届きません。</small>
+    </fieldset>
+    <fieldset data-audience="group">
+      <legend>{{ form.target_groups.label }}</legend>
+      {{ form.target_groups.errors }}
+      {% for box in form.target_groups %}<label>{{ box.tag }} {{ box.choice_label }}</label>
+      {% empty %}<small>グループがまだありません。「会員管理」→「グループの管理」で作成できます。</small>{% endfor %}
+    </fieldset>
+    <fieldset data-audience="individual">
+      <legend>{{ form.target_students.label }}</legend>
+      {{ form.target_students.errors }}
+      {% for box in form.target_students %}<label>{{ box.tag }} {{ box.choice_label }}</label>
+      {% empty %}<small>在籍中の会員がいません。</small>{% endfor %}
+    </fieldset>
+
+    {{ form.attachments.errors }}<label>{{ form.attachments.label }}{{ form.attachments }}</label>
+    <small>{{ form.attachments.help_text }}</small>
+    {% if attachments %}
+      <fieldset>
+        <legend>添付済みのファイル（チェックしたものを削除）</legend>
+        {% for f in attachments %}
+          <label>
+            <input type="checkbox" name="delete_attachments" value="{{ f.id }}">
+            {{ f.original_name }} <small>（{{ f.size|filesizeformat }}）</small>
+          </label>
+        {% endfor %}
+      </fieldset>
+    {% endif %}
+    {% if a.status == "published" %}
+      <button type="submit">保存</button>
+    {% else %}
+      <div class="grid">
+        <button type="submit" name="draft" class="secondary">下書き保存</button>
+        <button type="submit" name="publish">公開する</button>
+      </div>
+    {% endif %}
+  </form>
+</article>
+
+<script>
+  (function () {
+    var radios = document.querySelectorAll('input[name="{{ form.audience.html_name }}"]');
+    function toggle() {
+      var checked = document.querySelector('input[name="{{ form.audience.html_name }}"]:checked');
+      document.querySelectorAll("[data-audience]").forEach(function (fieldset) {
+        fieldset.hidden = !checked || fieldset.dataset.audience !== checked.value;
+      });
+    }
+    radios.forEach(function (radio) { radio.addEventListener("change", toggle); });
+    toggle();
+  })();
+</script>
+{% endblock %}

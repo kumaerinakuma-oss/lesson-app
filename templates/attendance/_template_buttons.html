@@ -1,0 +1,18 @@
+{% if templates %}
+<p>
+  <small>定型文（押すと下の欄に入ります。入れたあとで書き換えもできます）</small><br>
+  {% for t in templates %}
+    <!-- 文面は属性に入れておき、押したときに入力欄へ写す。画面を再読み込みせずに選び直せるようにするため -->
+    <button type="button" class="outline" style="width:auto" data-template-body="{{ t.body }}">{{ t.label }}</button>
+  {% endfor %}
+</p>
+<script>
+  document.querySelectorAll("[data-template-body]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var textarea = document.getElementById("{{ target_id }}");
+      textarea.value = button.dataset.templateBody;
+      textarea.focus();
+    });
+  });
+</script>
+{% endif %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}出欠連絡｜{{ school.name }}{% endblock %}
+
+{% block content %}
+<h2>{{ school.name }}の出欠連絡</h2>
+
+<div class="grid">
+  {% if can_send %}
+    <a href="{% url 'notice_create' school.id %}" role="button">出欠を連絡する</a>
+  {% endif %}
+  {% if is_staff %}
+    <a href="{% url 'template_list' school.id %}" role="button" class="secondary">定型文の管理</a>
+  {% endif %}
+</div>
+
+{% if is_staff %}
+  <p>
+    {% if only_unread %}
+      <a href="{% url 'notice_list' school.id %}">すべて表示</a>
+    {% else %}
+      <a href="?status=unread">未確認だけ表示</a>
+    {% endif %}
+  </p>
+{% endif %}
+
+{% for n in notices %}
+  <article>
+    <a href="{% url 'notice_detail' school.id n.id %}">
+      <strong>{{ n.target_date|date:"n/j（D）" }}　{{ n.student.name }}　{{ n.get_type_display }}</strong>
+    </a>
+    {% if n.status == "unread" %}<mark>未確認</mark>{% else %}<small>確認済み</small>{% endif %}
+    {% if n.reply_count %}<small>💬{{ n.reply_count }}</small>{% endif %}
+    <br>
+    <small>{{ n.body|truncatechars:40 }}</small>
+    {% if is_staff and n.status == "unread" %}
+      <!-- 返信が不要な連絡を、詳細画面を開かずにまとめて処理できるようにする -->
+      <form method="post" action="{% url 'notice_confirm' school.id n.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="list">
+        <button type="submit" class="outline" style="width:auto">確認済みにする</button>
+      </form>
+    {% endif %}
+  </article>
+{% empty %}
+  <p>出欠連絡はありません。</p>
+{% endfor %}
+
+<p><a href="{% url 'home' %}">トップに戻る</a></p>
+{% endblock %}

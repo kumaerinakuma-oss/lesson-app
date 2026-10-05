@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}定型文の管理｜{{ school.name }}{% endblock %}
+
+{% block content %}
+<h2>定型文の管理</h2>
+<p><a href="{% url 'template_create' school.id %}" role="button">定型文を追加</a></p>
+
+{% regroup templates by get_kind_display as groups %}
+{% for g in groups %}
+  <h3>{{ g.grouper }}</h3>
+  {% for t in g.list %}
+    <article>
+      <strong>{{ t.label }}</strong>
+      <p>{{ t.body|linebreaksbr }}</p>
+      <div class="grid">
+        <a href="{% url 'template_edit' school.id t.id %}" role="button" class="secondary">編集</a>
+        <form method="post" action="{% url 'template_delete' school.id t.id %}"
+              onsubmit="return confirm('「{{ t.label|escapejs }}」を削除しますか？');">
+          {% csrf_token %}
+          <button type="submit" class="secondary outline">削除</button>
+        </form>
+      </div>
+    </article>
+  {% endfor %}
+{% empty %}
+  <p>定型文はありません。</p>
+{% endfor %}
+
+<p><a href="{% url 'notice_list' school.id %}">出欠連絡に戻る</a></p>
+{% endblock %}

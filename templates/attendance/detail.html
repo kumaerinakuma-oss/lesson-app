@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}出欠連絡{% endblock %}
+
+{% block content %}
+<article>
+  <header>
+    <h2>{{ n.target_date|date:"Y年n月j日（D）" }}　{{ n.get_type_display }}</h2>
+    <strong>{{ n.student.name }}</strong>
+    {% if n.status == "unread" %}<mark>未確認</mark>{% else %}<small>確認済み</small>{% endif %}
+    <br><small>{{ n.created_at|date:"n/j H:i" }} 送信</small>
+  </header>
+  <p>{{ n.body|linebreaksbr }}</p>
+  {% if is_staff and n.status == "unread" %}
+    <form method="post" action="{% url 'notice_confirm' school.id n.id %}">
+      {% csrf_token %}
+      <button type="submit" class="outline">返信せずに確認済みにする</button>
+    </form>
+  {% endif %}
+</article>
+
+<h3>やりとり</h3>
+{% for r in replies %}
+  <article>
+    <small><strong>{% if r.from_staff %}教室{% else %}保護者{% endif %}</strong>　{{ r.created_at|date:"n/j H:i" }}</small>
+    <p>{{ r.body|linebreaksbr }}</p>
+  </article>
+{% empty %}
+  <p><small>まだ返信はありません。</small></p>
+{% endfor %}
+
+<form method="post">
+  {% csrf_token %}
+  {% include "attendance/_template_buttons.html" with target_id=form.body.id_for_label %}
+  {{ form.body.errors }}
+  {{ form.body }}
+  <button type="submit">返信する</button>
+</form>
+
+<p><a href="{% url 'notice_list' school.id %}">一覧に戻る</a></p>
+{% endblock %}

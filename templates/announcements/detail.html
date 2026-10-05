@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ a.title }}{% endblock %}
+
+{% block content %}
+<article>
+  <header>
+    <h2>{{ a.title }}</h2>
+    <small>
+      {% if a.status == "draft" %}<mark>下書き</mark>{% else %}{{ a.published_at|date:"Y/m/d H:i" }} 公開{% endif %}
+      {% if a.is_edited %}／{{ a.content_updated_at|date:"Y/m/d H:i" }} 編集済み{% endif %}
+      <br>
+      {% if is_staff %}宛先　{{ audience_label }}
+      {% elif a.audience != "all" %}<mark>{{ a.get_audience_display }}宛のお知らせ</mark>{% endif %}
+    </small>
+  </header>
+
+  <!-- 改行を反映しつつ、HTMLとして解釈させないため linebreaksbr を使う（自動エスケープは有効のまま） -->
+  <p>{{ a.body|linebreaksbr }}</p>
+
+  {% for f in attachments %}
+    {% url 'attachment_file' school.id a.id f.id as file_url %}
+    <figure>
+      {% if f.kind == "image" %}
+        <a href="{{ file_url }}" target="_blank" rel="noopener"><img src="{{ file_url }}" alt="{{ f.original_name }}" loading="lazy"></a>
+      {% elif f.kind == "video" %}
+        <!-- 開いただけで大きな動画を全部読み込まないよう、長さなどの情報だけ先に取得する -->
+        <video src="{{ file_url }}" controls preload="metadata" style="width:100%"></video>
+      {% elif f.kind == "audio" %}
+        <audio src="{{ file_url }}" controls preload="metadata" style="width:100%"></audio>
+      {% endif %}
+      <figcaption>
+        <a href="{{ file_url }}" target="_blank" rel="noopener">📎 {{ f.original_name }}</a>
+        <small>（{{ f.size|filesizeformat }}）</small>
+      </figcaption>
+    </figure>
+  {% endfor %}
+
+  {% if a.status == "published" %}
+  <footer>
+    <div class="grid">
+      {% for r in reactions %}
+        <!-- 誰かが用意したリンクを踏んだだけでリアクションがつかないよう、フォーム送信（POST）で行う -->
+        <form method="post" action="{% url 'toggle_reaction' school.id a.id %}">
+          {% csrf_token %}
+          <button type="submit" name="emoji" value="{{ r.emoji }}" title="{{ r.label }}"
+                  class="{% if not r.mine %}outline{% endif %}">
+            {{ r.emoji }} {{ r.count }}
+          </button>
+        </form>
+      {% endfor %}
+    </div>
+  </footer>
+  {% endif %}
+</article>
+
+{% if a.status == "published" %}
+<section id="comments">
+  <h3>コメント（{{ comments|length }}）</h3>
+  {% for c in comments %}
+    <article>
+      <small><strong>{{ c.display_name }}</strong>　{{ c.created_at|date:"m/d H:i" }}</small>
+      <p>{{ c.body|linebreaksbr }}</p>
+      {% if c.can_delete %}
+        <form method="post" action="{% url 'comment_delete' school.id a.id c.id %}"
+              onsubmit="return confirm('このコメントを削除しますか？');">
+          {% csrf_token %}
+          <button type="submit" class="outline secondary" style="width:auto">削除</button>
+        </form>
+      {% endif %}
+    </article>
+  {% empty %}
+    <p><small>まだコメントはありません。</small></p>
+  {% endfor %}
+  <form method="post" action="{% url 'comment_create' school.id a.id %}">
+    {% csrf_token %}
+    {{ comment_form.body }}
+    <p><small>コメントは、このお知らせを見られる全員に公開されます。</small></p>
+    <button type="submit">コメントする</button>
+  </form>
+</section>
+{% endif %}
+
+{% if is_staff %}
+  <div class="grid">
+    <a href="{% url 'announcement_edit' school.id a.id %}" role="button" class="secondary">編集</a>
+    <!-- 誤操作で消えると元に戻せないため、確認ダイアログを挟む -->
+    <form method="post" action="{% url 'announcement_delete' school.id a.id %}"
+          onsubmit="return confirm('「{{ a.title|escapejs }}」を削除しますか？添付ファイル・コメントもすべて削除され、元に戻せません。');">
+      {% csrf_token %}
+      <button type="submit" class="secondary outline">削除</button>
+    </form>
+  </div>
+
+  {% if a.status == "published" %}
+  <article>
+    <strong>既読 {{ read_count }} / {{ guardian_count }}人</strong>
+    {% if unread_users %}
+      <details>
+        <summary>未読の保護者（{{ unread_users|length }}人）</summary>
+        <ul>{% for u in unread_users %}<li>{{ u.email }}</li>{% endfor %}</ul>
+      </details>
+    {% endif %}
+  </article>
+  {% endif %}
+{% endif %}
+
+{% if revisions %}
+<details>
+  <summary>編集履歴（{{ revisions|length }}件）</summary>
+  {% for r in revisions %}
+    <article>
+      <small>{{ r.edited_at|date:"Y/m/d H:i" }} に編集される前の内容</small>
+      <h4>{{ r.title }}</h4>
+      <p>{{ r.body|linebreaksbr }}</p>
+      {% if r.attachment_note %}<p><small>{{ r.attachment_note|linebreaksbr }}</small></p>{% endif %}
+    </article>
+  {% endfor %}
+</details>
+{% endif %}
+
+<p><a href="{% url 'announcement_list' school.id %}">一覧に戻る</a></p>
+{% endblock %}

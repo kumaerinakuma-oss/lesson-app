@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}会員管理｜{{ school.name }}{% endblock %}
+
+{% block content %}
+<h2>{{ school.name }}の会員管理</h2>
+
+<p><a href="{% url 'group_list' school.id %}" role="button" class="secondary">グループの管理</a></p>
+
+<form method="get">
+  <fieldset role="group">
+    <select name="status" aria-label="状態">
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="group" aria-label="グループ">
+      <option value="">すべてのグループ</option>
+      <option value="none" {% if group_id == "none" %}selected{% endif %}>未所属</option>
+      {% for g in groups %}
+        <option value="{{ g.id }}" {% if group_id == g.id|stringformat:"s" %}selected{% endif %}>{{ g.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="secondary">絞り込む</button>
+  </fieldset>
+</form>
+
+<p><small>{{ students|length }}人</small></p>
+<!-- スマホで列が画面からはみ出しても、表だけを横にスクロールできるようにする -->
+<div class="overflow-auto">
+  <table>
+    <thead><tr><th>名前</th><th>学年</th><th>グループ</th><th>月謝</th></tr></thead>
+    <tbody>
+      {% for s in students %}
+        <tr>
+          <td><a href="{% url 'member_detail' school.id s.id %}">{{ s.name }}</a></td>
+          <td>{{ s.grade|default:"—" }}</td>
+          <td>{{ s.group.name|default:"—" }}</td>
+          <td>{% if s.monthly_fee %}{{ s.monthly_fee|intcomma }}円{% else %}—{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4">該当する会員はいません。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p><a href="{% url 'home' %}">トップに戻る</a></p>
+{% endblock %}

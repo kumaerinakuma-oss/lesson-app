@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}請求をまとめて作成{% endblock %}
+
+{% block content %}
+<article>
+  <h2>請求をまとめて作成</h2>
+  <p>在籍中の会員 <strong>{{ student_count }}人</strong> 全員に請求を作成します。<br>
+  <small>同じ月・同じ項目の請求がすでにある会員には、重ねて作成されません。
+  {% if no_fee_count %}<br>月謝金額が未設定の会員が <strong>{{ no_fee_count }}人</strong> います。下の「金額」を入れるとその金額で請求します。空のままだと、その会員の請求は作成されません。{% endif %}</small></p>
+  <form method="post" onsubmit="this.querySelector('button').disabled = true;">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">作成する</button>
+  </form>
+  <p><a href="{% url 'invoice_list' school.id %}">一覧に戻る</a></p>
+</article>
+{% endblock %}

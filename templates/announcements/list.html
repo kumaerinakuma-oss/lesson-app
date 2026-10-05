@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}お知らせ｜{{ school.name }}{% endblock %}
+
+{% block content %}
+<h2>{{ school.name }}のお知らせ</h2>
+
+{% if is_staff %}
+  <p><a href="{% url 'announcement_create' school.id %}" role="button">新しいお知らせを作成</a></p>
+{% endif %}
+
+{% for a in announcements %}
+  <article>
+    <a href="{% url 'announcement_detail' school.id a.id %}"><strong>{{ a.title }}</strong></a>
+    {% if a.attachment_count %}<small>📎{{ a.attachment_count }}</small>{% endif %}
+    {% if a.comment_count %}<small>💬{{ a.comment_count }}</small>{% endif %}
+    {% if a.audience != "all" %}<small>［{{ a.get_audience_display }}宛］</small>{% endif %}
+    {% if a.status == "draft" %}<mark>下書き</mark>{% endif %}
+    {% if a.unread %}<mark>{% if a.is_edited %}更新あり{% else %}未読{% endif %}</mark>{% endif %}
+    <br>
+    <small>
+      {% if a.published_at %}{{ a.published_at|date:"Y/m/d H:i" }}{% else %}未公開{% endif %}
+      {% if a.is_edited %}（{{ a.content_updated_at|date:"m/d H:i" }} 編集）{% endif %}
+    </small>
+  </article>
+{% empty %}
+  <p>お知らせはまだありません。</p>
+{% endfor %}
+
+<p><a href="{% url 'home' %}">トップに戻る</a></p>
+{% endblock %}

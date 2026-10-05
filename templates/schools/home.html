@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>所属している教室</h2>
+
+{% for m in memberships %}
+  <article>
+    <strong>{{ m.school.name }}</strong><br>
+    {{ m.get_role_display }}／{{ m.get_status_display }}
+    {% if m.status == "active" %}
+      <p><a href="{% url 'announcement_list' m.school.id %}">お知らせを見る</a></p>
+      <p><a href="{% url 'notice_list' m.school.id %}">出欠連絡</a></p>
+      <p><a href="{% url 'calendar' m.school.id %}">カレンダー</a></p>
+      <p><a href="{% url 'invoice_list' m.school.id %}">月謝</a></p>
+    {% endif %}
+    {% if m.status == "active" and m.role != "guardian" %}
+      <p><a href="{% url 'member_list' m.school.id %}">会員管理</a></p>
+      <p><a href="{% url 'approvals' m.school.id %}">承認待ち：{{ m.pending_count }}件</a></p>
+    {% endif %}
+    {% if m.role == "owner" %}
+      <!-- 運営者がリンクをコピーしてLINEなどで配れるよう、完全なURLで表示する -->
+      <p><small>招待リンク：</small><br>
+      <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}{% url 'join' m.school.invite_token %}"></p>
+    {% endif %}
+  </article>
+{% empty %}
+  <p>まだどの教室にも所属していません。</p>
+{% endfor %}
+
+{% if children %}
+<h2>お子さま</h2>
+{% for c in children %}
+  <article>{{ c.name }}{% if c.grade %}　{{ c.grade }}{% endif %}（{{ c.school.name }}）／{{ c.get_status_display }}</article>
+{% endfor %}
+{% endif %}
+{% endblock %}

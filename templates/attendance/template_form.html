@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}定型文{% endblock %}
+
+{% block content %}
+<article>
+  <h2>{% if t %}定型文の編集{% else %}定型文の追加{% endif %}</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">保存</button>
+  </form>
+  <p><a href="{% url 'template_list' school.id %}">一覧に戻る</a></p>
+</article>
+{% endblock %}
