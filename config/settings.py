@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,7 +27,9 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-*p=quolxt)=3!m&as$l^l_b25mtf11$p4cz#+y9#kxq2h68lvz'
+# 秘密鍵はログインのセッションなどの改ざん防止に使うため、GitHubに公開されるソースコードには書かず .env から読む。
+# 未設定でも起動できるよう、そのときは起動のたびに使い捨ての鍵を作る（再起動するとログインし直しになる）
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

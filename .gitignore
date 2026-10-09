@@ -7,3 +7,6 @@ __pycache__/
 .env
 db.sqlite3
 media/
+
+# 自分用の作業メモ。個人のメールアドレスなどを含むため公開しない
+CHEATSHEET.md
